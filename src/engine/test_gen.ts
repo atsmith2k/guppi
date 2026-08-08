@@ -42,7 +42,7 @@ export class TestGenEngine {
 
     const testFilePath = path.join(testDir, `${baseName}.test.ts`);
 
-    let testCode = `import { describe, it, expect } from 'vitest';\n\n`;
+    let testCode = `import { describe, it } from 'node:test';\nimport assert from 'node:assert';\n\n`;
     testCode += `// Auto-Generated GUPPI Test Suite for: ${filePath}\n\n`;
 
     symbols.forEach((sym) => {
@@ -51,18 +51,18 @@ export class TestGenEngine {
         testCode += `describe('${sym.symbol_name}', () => {\n`;
         testCode += `  it('should initialize and handle standard inputs cleanly', () => {\n`;
         testCode += `    // Signature: ${sym.signature}\n`;
-        testCode += `    expect(true).toBe(true);\n`;
+        testCode += `    assert.strictEqual(true, true);\n`;
         testCode += `  });\n\n`;
         testCode += `  it('should handle edge cases and null/undefined gracefully', () => {\n`;
         testCode += `    // Boundary test for ${sym.symbol_name}\n`;
-        testCode += `    expect(() => {}).not.toThrow();\n`;
+        testCode += `    assert.doesNotThrow(() => {});\n`;
         testCode += `  });\n`;
         testCode += `});\n\n`;
       }
     });
 
     if (symbols.length === 0) {
-      testCode += `describe('${baseName} module', () => {\n  it('should load module cleanly', () => {\n    expect(true).toBe(true);\n  });\n});\n`;
+      testCode += `describe('${baseName} module', () => {\n  it('should load module cleanly', () => {\n    assert.strictEqual(true, true);\n  });\n});\n`;
     }
 
     fs.writeFileSync(testFilePath, testCode);

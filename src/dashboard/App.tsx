@@ -10,10 +10,16 @@ import { BrainstormTab } from './components/BrainstormTab.js';
 import { SelfHealTab } from './components/SelfHealTab.js';
 import { MeshTab } from './components/MeshTab.js';
 import { TestStudioTab } from './components/TestStudioTab.js';
-import { LayoutDashboard, Database, Code, Cpu, ShieldCheck, GitPullRequest, GitGraph, Lightbulb, Wrench, Network, FlaskConical, RefreshCw } from 'lucide-react';
+import { AgenticAssistTab } from './components/AgenticAssistTab.js';
+import { TaskPlannerTab } from './components/TaskPlannerTab.js';
+import { EpisodicMemoryTab } from './components/EpisodicMemoryTab.js';
+import { AgentEvalTab } from './components/AgentEvalTab.js';
+import { CallGraphTab } from './components/CallGraphTab.js';
+import { LayoutDashboard, Database, Code, Cpu, ShieldCheck, GitPullRequest, GitGraph, Lightbulb, Wrench, Network, FlaskConical, Zap, RefreshCw, ListTodo, Brain, BarChart3, GitFork } from 'lucide-react';
 
 export const App: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'memory' | 'codegraph' | 'telemetry' | 'guard' | 'bridge'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'memory' | 'codegraph' | 'telemetry' | 'guard' | 'bridge' | 'assist' | 'taskplanner' | 'episodic' | 'eval' | 'callgraph'>('overview');
+
   const [status, setStatus] = useState<any>(null);
 
   const fetchStatus = () => {
@@ -80,6 +86,90 @@ export const App: React.FC = () => {
               }}
             >
               <LayoutDashboard size={18} /> Overview & Setup
+            </button>
+
+            <button
+              onClick={() => setActiveTab('taskplanner')}
+              className={activeTab === 'taskplanner' ? 'glass-panel' : ''}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                padding: '12px 14px',
+                borderRadius: '8px',
+                border: 'none',
+                background: activeTab === 'taskplanner' ? 'rgba(59,130,246,0.12)' : 'transparent',
+                color: activeTab === 'taskplanner' ? 'var(--accent-blue)' : 'var(--text-muted)',
+                fontWeight: activeTab === 'taskplanner' ? 600 : 500,
+                fontSize: '0.9rem',
+                cursor: 'pointer',
+                textAlign: 'left',
+              }}
+            >
+              <ListTodo size={18} /> Task Planner & DAG
+            </button>
+
+            <button
+              onClick={() => setActiveTab('episodic')}
+              className={activeTab === 'episodic' ? 'glass-panel' : ''}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                padding: '12px 14px',
+                borderRadius: '8px',
+                border: 'none',
+                background: activeTab === 'episodic' ? 'rgba(168,85,247,0.12)' : 'transparent',
+                color: activeTab === 'episodic' ? 'var(--accent-purple)' : 'var(--text-muted)',
+                fontWeight: activeTab === 'episodic' ? 600 : 500,
+                fontSize: '0.9rem',
+                cursor: 'pointer',
+                textAlign: 'left',
+              }}
+            >
+              <Brain size={18} /> Episodic Fact Graph
+            </button>
+
+            <button
+              onClick={() => setActiveTab('eval')}
+              className={activeTab === 'eval' ? 'glass-panel' : ''}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                padding: '12px 14px',
+                borderRadius: '8px',
+                border: 'none',
+                background: activeTab === 'eval' ? 'rgba(16,185,129,0.12)' : 'transparent',
+                color: activeTab === 'eval' ? 'var(--accent-emerald)' : 'var(--text-muted)',
+                fontWeight: activeTab === 'eval' ? 600 : 500,
+                fontSize: '0.9rem',
+                cursor: 'pointer',
+                textAlign: 'left',
+              }}
+            >
+              <BarChart3 size={18} /> RAG Eval Studio
+            </button>
+
+            <button
+              onClick={() => setActiveTab('callgraph')}
+              className={activeTab === 'callgraph' ? 'glass-panel' : ''}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                padding: '12px 14px',
+                borderRadius: '8px',
+                border: 'none',
+                background: activeTab === 'callgraph' ? 'rgba(245,158,11,0.12)' : 'transparent',
+                color: activeTab === 'callgraph' ? 'var(--accent-amber)' : 'var(--text-muted)',
+                fontWeight: activeTab === 'callgraph' ? 600 : 500,
+                fontSize: '0.9rem',
+                cursor: 'pointer',
+                textAlign: 'left',
+              }}
+            >
+              <GitFork size={18} /> Symbol Call Graph
             </button>
 
             <button
@@ -286,6 +376,26 @@ export const App: React.FC = () => {
             >
               <FlaskConical size={18} /> Test Studio
             </button>
+            <button
+              onClick={() => setActiveTab('assist')}
+              className={activeTab === 'assist' ? 'glass-panel' : ''}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                padding: '12px 14px',
+                borderRadius: '8px',
+                border: 'none',
+                background: activeTab === 'assist' ? 'rgba(6,182,212,0.18)' : 'transparent',
+                color: activeTab === 'assist' ? 'var(--accent-cyan)' : 'var(--text-muted)',
+                fontWeight: activeTab === 'assist' ? 600 : 500,
+                fontSize: '0.9rem',
+                cursor: 'pointer',
+                textAlign: 'left',
+              }}
+            >
+              <Zap size={18} /> Agentic Assist
+            </button>
           </nav>
         </div>
 
@@ -303,6 +413,10 @@ export const App: React.FC = () => {
       {/* Main Content View */}
       <main style={{ flex: 1, padding: '32px 40px', overflowY: 'auto' }}>
         {activeTab === 'overview' && <OverviewTab status={status} onRefresh={fetchStatus} />}
+        {activeTab === 'taskplanner' && <TaskPlannerTab />}
+        {activeTab === 'episodic' && <EpisodicMemoryTab />}
+        {activeTab === 'eval' && <AgentEvalTab />}
+        {activeTab === 'callgraph' && <CallGraphTab />}
         {activeTab === 'memory' && <MemoryTab />}
         {activeTab === 'codegraph' && <CodeGraphTab />}
         {activeTab === 'telemetry' && <TelemetryTab />}
@@ -313,7 +427,10 @@ export const App: React.FC = () => {
         {activeTab === ('selfheal' as any) && <SelfHealTab />}
         {activeTab === ('mesh' as any) && <MeshTab />}
         {activeTab === ('testgen' as any) && <TestStudioTab />}
+        {activeTab === 'assist' && <AgenticAssistTab />}
       </main>
     </div>
   );
 };
+
+

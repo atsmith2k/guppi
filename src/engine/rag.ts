@@ -23,16 +23,8 @@ export class RAGEngine {
     const relevantMemories = this.db.searchMemories(query, maxItems);
     const symbols = this.db.querySymbols(query, maxItems);
 
-    // Also match codebase index files
-    const allCodeIndex = this.db.getCodeIndex();
-    const qLower = query.toLowerCase();
-    const codeFiles = allCodeIndex.filter(
-      (f) =>
-        f.path.toLowerCase().includes(qLower) ||
-        f.summary.toLowerCase().includes(qLower) ||
-        f.exports.some((e) => e.toLowerCase().includes(qLower)) ||
-        f.imports.some((i) => i.toLowerCase().includes(qLower))
-    ).slice(0, maxItems);
+    // Match codebase index files via SQLite FTS index
+    const codeFiles = this.db.searchCodebaseFTS(query, maxItems);
 
     // Format synthesized context blob for LLM consuming agent
     let synthesizedContext = `### GUPPI Workspace Intelligence for: "${query}"\n\n`;

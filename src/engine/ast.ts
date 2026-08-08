@@ -6,17 +6,22 @@ export class ASTExtractor {
   /**
    * Lightweight regex-based AST & symbol extractor supporting TypeScript, JavaScript, Python, Go, and JSON.
    */
-  public static extractSymbolsFromFile(filePath: string, relativePath: string): ASTSymbol[] {
+  public static extractSymbolsFromFile(filePath: string, relativePath: string, fileContent?: string): ASTSymbol[] {
     const symbols: ASTSymbol[] = [];
-    if (!fs.existsSync(filePath)) return symbols;
+    const content = fileContent ?? (fs.existsSync(filePath) ? fs.readFileSync(filePath, 'utf-8') : '');
+    if (!content) return symbols;
 
     const ext = path.extname(filePath).toLowerCase();
-    const content = fs.readFileSync(filePath, 'utf-8');
     const lines = content.split('\n');
 
     if (['.ts', '.tsx', '.js', '.jsx'].includes(ext)) {
       lines.forEach((line, index) => {
         const lineNum = index + 1;
+        const trimmed = line.trim();
+
+        // Fast string pre-check: skip lines that cannot contain JS/TS declarations
+        if (!trimmed || trimmed.startsWith('//') || trimmed.startsWith('/*') || trimmed.startsWith('*')) return;
+        if (!/function|const|class|interface|type|export/.test(line)) return;
 
         // Functions (e.g. export function foo(), const bar = () => {})
         const funcMatch = line.match(/(?:export\s+)?(?:async\s+)?function\s+([a-zA-Z0-9_$]+)\s*\(([^)]*)\)/);
@@ -99,6 +104,7 @@ export class ASTExtractor {
     } else if (ext === '.py') {
       lines.forEach((line, index) => {
         const lineNum = index + 1;
+        if (!line.includes('def ') && !line.includes('class ')) return;
         const pyFunc = line.match(/^\s*def\s+([a-zA-Z0-9_]+)\s*\(([^)]*)\):/);
         if (pyFunc) {
           symbols.push({
@@ -144,15 +150,17 @@ export class ASTExtractor {
     return '';
   }
 
-  public static extractImportsExports(filePath: string): { exports: string[]; imports: string[] } {
+  public static extractImportsExports(filePath: string, fileContent?: string): { exports: string[]; imports: string[] } {
     const exportsSet = new Set<string>();
     const importsSet = new Set<string>();
-    if (!fs.existsSync(filePath)) return { exports: [], imports: Array.from(importsSet) };
+    const content = fileContent ?? (fs.existsSync(filePath) ? fs.readFileSync(filePath, 'utf-8') : '');
+    if (!content) return { exports: [], imports: [] };
 
-    const content = fs.readFileSync(filePath, 'utf-8');
     const lines = content.split('\n');
 
     lines.forEach((line) => {
+      if (!line.includes('import') && !line.includes('export')) return;
+
       // Imports: import { foo } from 'bar' or import default from 'bar'
       const importMatch = line.match(/import\s+.*?from\s+['"]([^'"]+)['"]/);
       if (importMatch) {
@@ -172,3 +180,4 @@ export class ASTExtractor {
     };
   }
 }
+

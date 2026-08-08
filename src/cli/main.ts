@@ -133,5 +133,168 @@ export function runCLI() {
       console.log(`\n🧠 Memory saved [ID: ${mem.id}]: "${mem.title}"`);
     });
 
+  // guppi impact
+  program
+    .command('impact <target>')
+    .description('Evaluate breaking change impact for a symbol or file')
+    .action(async (target) => {
+      const db = new GuppiDB(process.cwd());
+      const { DependencyAnalyzer } = await import('../engine/dependency_analyzer.js');
+      const analyzer = new DependencyAnalyzer(db);
+      const report = analyzer.evaluateImpact(target);
+
+      console.log(`\n🎯 GUPPI Impact Analysis: "${target}"`);
+      console.log(`- Risk Level: [${report.riskLevel}]`);
+      console.log(`- Recommendation: ${report.recommendation}`);
+      console.log(`- Affected Files (${report.affectedFiles.length}): ${report.affectedFiles.join(', ') || 'None'}`);
+    });
+
+  // guppi checkpoint
+  program
+    .command('checkpoint <role> <summary>')
+    .description('Save a subagent execution checkpoint to GUPPI working memory')
+    .action(async (role, summary) => {
+      const db = new GuppiDB(process.cwd());
+      const { AgentHandoffEngine } = await import('../engine/agent_handoff.js');
+      const handoff = new AgentHandoffEngine(db);
+      const ckpt = handoff.saveCheckpoint('cli_user', role, summary, { cliTime: new Date().toISOString() });
+      console.log(`\n📦 Checkpoint saved [ID: ${ckpt.id}] for Role: "${role}"`);
+    });
+
+  // guppi resume
+  program
+    .command('resume <checkpointId>')
+    .description('Retrieve compressed context handoff package to resume subagent session')
+    .action(async (checkpointId) => {
+      const db = new GuppiDB(process.cwd());
+      const { AgentHandoffEngine } = await import('../engine/agent_handoff.js');
+      const handoff = new AgentHandoffEngine(db);
+      try {
+        const pkg = handoff.generateHandoffPackage(checkpointId);
+        console.log(pkg.instructionPrompt);
+      } catch (err: any) {
+        console.error(`\n❌ Error resuming checkpoint: ${err.message}`);
+      }
+    });
+
+
+  // guppi fix
+  program
+    .command('fix <errorLog>')
+    .description('Parse terminal error output and suggest surgical auto-repair diff')
+    .action(async (errorLog) => {
+      const db = new GuppiDB(process.cwd());
+      const { ExecutionFeedbackEngine } = await import('../engine/execution_feedback.js');
+      const feedback = new ExecutionFeedbackEngine(db);
+      const res = feedback.analyzeAndProposeFix('cli', errorLog, '', 1);
+
+      console.log(`\n🛠️ GUPPI Auto-Fix Proposal:`);
+      console.log(`- Diagnosis: ${res.fix.diagnosis}`);
+      console.log(`- Confidence: ${(res.fix.confidence * 100).toFixed(0)}%`);
+      console.log(`Suggested Patch:\n${res.fix.suggestedPatch}`);
+    });
+
+  // guppi backups
+  program
+    .command('backups')
+    .description('List active shadow file backup snapshots created before code edits')
+    .action(async () => {
+      const db = new GuppiDB(process.cwd());
+      const backups = db.getShadowBackups(20);
+      console.log(`\n🛡️ Active Shadow File Backups (${backups.length}):`);
+      backups.forEach((b) => {
+        console.log(`- [${b.id}] ${b.file_path} -> ${b.backup_path} (${b.created_at})`);
+      });
+    });
+
+  // guppi plan
+  program
+    .command('plan <goal>')
+    .description('Decompose goal into multi-agent DAG task plan (Poached from Aider & Superpowers)')
+    .action(async (goal) => {
+      const db = new GuppiDB(process.cwd());
+      const { TaskPlannerEngine } = await import('../engine/task_planner.js');
+      const planner = new TaskPlannerEngine(db);
+      const res = planner.createPlan(goal);
+
+      console.log(`\n📋 Task Plan Created [ID: ${res.plan.id}]`);
+      console.log(`Goal: "${res.plan.goal}"\n`);
+      res.steps.forEach((s) => {
+        console.log(`${s.step_number}. [${s.assigned_role}] ${s.title}`);
+      });
+    });
+
+  // guppi tasks
+  program
+    .command('tasks')
+    .description('List all active task plans and DAG step completion progress')
+    .action(async () => {
+      const db = new GuppiDB(process.cwd());
+      const { TaskPlannerEngine } = await import('../engine/task_planner.js');
+      const planner = new TaskPlannerEngine(db);
+      const plans = planner.listActivePlans(20);
+
+      console.log(`\n📋 Active GUPPI Task Plans (${plans.length}):`);
+      plans.forEach((p) => {
+        console.log(`- [${p.plan.id}] "${p.plan.title}" - Progress: ${p.progressPercent}% (${p.completedCount}/${p.totalCount} steps)`);
+      });
+    });
+
+  // guppi facts
+  program
+    .command('facts [query]')
+    .description('Query extracted subject-relation-object Fact Graph (Poached from Mem0 & MemGPT)')
+    .action(async (query) => {
+      const db = new GuppiDB(process.cwd());
+      const { EpisodicMemoryEngine } = await import('../engine/episodic_memory.js');
+      const memEngine = new EpisodicMemoryEngine(db);
+      const facts = memEngine.queryFacts(query || '', 20);
+
+      console.log(`\n🕸️ GUPPI Fact Triples (${facts.length}):`);
+      facts.forEach((f) => {
+        console.log(`- \`${f.subject}\` --[${f.relation}]--> \`${f.object}\` (Confidence: ${(f.confidence * 100).toFixed(0)}%)`);
+      });
+    });
+
+  // guppi eval
+  program
+    .command('eval')
+    .description('Display Agent RAG precision, faithfulness & latency report (Poached from DeepEval & AgentOps)')
+    .action(async () => {
+      const db = new GuppiDB(process.cwd());
+      const { AgentEvalEngine } = await import('../engine/agent_eval.js');
+      const evalEngine = new AgentEvalEngine(db);
+      const report = evalEngine.getBenchmarkReport(50);
+
+      console.log(`\n📊 Agent Benchmark Report (${report.totalRuns} total runs):`);
+      console.log(`- Average Precision: ${(report.avgPrecision * 100).toFixed(0)}%`);
+      console.log(`- Average Faithfulness: ${(report.avgFaithfulness * 100).toFixed(0)}%`);
+      console.log(`- Average Latency: ${report.avgLatencyMs}ms`);
+      console.log(`- Total Token Cost: ${report.totalTokenCost} tokens`);
+    });
+
+  // guppi callgraph
+  program
+    .command('callgraph [symbol]')
+    .description('Build call graph and simulate signature mutation risk (Poached from Tree-Sitter & GraphRAG)')
+    .action(async (symbol) => {
+      const db = new GuppiDB(process.cwd());
+      const { SymbolCallGraphEngine } = await import('../engine/symbol_call_graph.js');
+      const cgEngine = new SymbolCallGraphEngine(db);
+      const graph = cgEngine.buildCallGraph();
+
+      console.log(`\n🕸️ AST Symbol Call Graph Built: ${graph.nodes.length} nodes, ${graph.edges.length} edges`);
+
+      if (symbol) {
+        const sim = cgEngine.simulateSignatureMutation(symbol, `(updated: any) => void`);
+        console.log(`\n🔬 Signature Mutation Simulation for "${symbol}":`);
+        console.log(`- Risk Score: [${sim.riskScore}%]`);
+        console.log(`- Breaking Change Call Sites: ${sim.breakingChangeCount}`);
+        console.log(`- Recommendation: ${sim.recommendation}`);
+      }
+    });
+
   program.parse();
 }
+
+

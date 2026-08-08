@@ -70,8 +70,123 @@ export interface BridgeTask {
   created_at: string;
 }
 
+export interface DependencyEdge {
+  id: string;
+  source_symbol: string;
+  target_symbol: string;
+  edge_type: 'calls' | 'imports' | 'extends' | 'implements';
+  file_path: string;
+  line_number: number;
+  created_at: string;
+}
+
+export interface SubagentCheckpoint {
+  id: string;
+  parent_agent_id: string;
+  subagent_role: string;
+  task_summary: string;
+  state_json: string;
+  created_at: string;
+}
+
+export interface ExecutionFeedbackRecord {
+  id: string;
+  command_type: string;
+  stdout?: string;
+  stderr?: string;
+  exit_code: number;
+  matched_memory_id?: string;
+  proposed_fix?: string;
+  created_at: string;
+}
+
+export interface ShadowBackupRecord {
+  id: string;
+  file_path: string;
+  backup_path: string;
+  hash: string;
+  created_at: string;
+}
+
+export interface TaskPlan {
+  id: string;
+  title: string;
+  goal: string;
+  status: 'planning' | 'in_progress' | 'completed' | 'failed';
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TaskStep {
+  id: string;
+  plan_id: string;
+  step_number: number;
+  title: string;
+  description: string;
+  assigned_role: string;
+  dependencies: string[];
+  status: 'pending' | 'running' | 'completed' | 'failed';
+  result?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface EpisodicMemoryRecord {
+  id: string;
+  topic: string;
+  content: string;
+  memory_type: 'episodic' | 'semantic' | 'preference';
+  importance_score: number;
+  access_count: number;
+  last_accessed_at: string;
+  decay_score: number;
+  created_at: string;
+}
+
+export interface FactTriple {
+  id: string;
+  subject: string;
+  relation: string;
+  object: string;
+  confidence: number;
+  source: string;
+  created_at: string;
+}
+
+export interface EvalRunRecord {
+  id: string;
+  agent_id: string;
+  query_prompt: string;
+  response_text: string;
+  precision_score: number;
+  faithfulness_score: number;
+  latency_ms: number;
+  token_cost: number;
+  created_at: string;
+}
+
+export interface CallGraphNode {
+  id: string;
+  symbol_name: string;
+  kind: string;
+  file_path: string;
+  line_number: number;
+  signature: string;
+}
+
+export interface CallGraphEdge {
+  id: string;
+  caller_symbol: string;
+  callee_symbol: string;
+  file_path: string;
+  line_number: number;
+  call_type: 'direct_call' | 'method_invocation' | 'instantiation';
+}
+
+
 export class GuppiDB {
   private db: Database.Database;
+  private stmtCache: Map<string, Database.Statement> = new Map();
   public dbPath: string;
 
   constructor(targetDir: string = process.cwd()) {
@@ -82,13 +197,27 @@ export class GuppiDB {
     this.dbPath = path.join(guppiDir, 'guppi.db');
     this.db = new Database(this.dbPath);
     this.db.pragma('journal_mode = WAL');
+    this.db.pragma('synchronous = NORMAL');
+    this.db.pragma('temp_store = MEMORY');
+    this.db.pragma('mmap_size = 268435456');
+    this.db.pragma('cache_size = -16000');
     this.init();
+  }
+
+  private getStmt(sql: string): Database.Statement {
+    let stmt = this.stmtCache.get(sql);
+    if (!stmt) {
+      stmt = this.db.prepare(sql);
+      this.stmtCache.set(sql, stmt);
+    }
+    return stmt;
   }
 
   private init() {
     this.db.exec(CREATE_TABLES_SQL);
     this.seedDefaultGuardrails();
   }
+
 
   private seedDefaultGuardrails() {
     const checkStmt = this.db.prepare('SELECT COUNT(*) as count FROM guardrails');
@@ -222,7 +351,7 @@ export class GuppiDB {
   }
 
   public getCodeIndex(): CodeFileIndex[] {
-    const stmt = this.db.prepare('SELECT * FROM codebase_index ORDER BY path ASC');
+    const stmt = this.getStmt('SELECT * FROM codebase_index ORDER BY path ASC');
     const rows = stmt.all() as any[];
     return rows.map((r) => ({
       ...r,
@@ -230,6 +359,41 @@ export class GuppiDB {
       imports: JSON.parse(r.imports || '[]'),
     }));
   }
+
+  public searchCodebaseFTS(query: string, limit: number = 5): CodeFileIndex[] {
+    if (!query || query.trim() === '') {
+      return this.getCodeIndex().slice(0, limit);
+    }
+    try {
+      const sanitized = query.replace(/['"^*]/g, ' ').trim();
+      const ftsStmt = this.getStmt(`
+        SELECT c.* FROM codebase_index c
+        JOIN codebase_fts f ON c.path = f.path
+        WHERE codebase_fts MATCH ?
+        LIMIT ?
+      `);
+      const rows = ftsStmt.all(`${sanitized}*`, limit) as any[];
+      return rows.map((r) => ({
+        ...r,
+        exports: JSON.parse(r.exports || '[]'),
+        imports: JSON.parse(r.imports || '[]'),
+      }));
+    } catch {
+      const term = `%${query}%`;
+      const fallbackStmt = this.getStmt(`
+        SELECT * FROM codebase_index
+        WHERE path LIKE ? OR summary LIKE ? OR exports LIKE ? OR imports LIKE ?
+        ORDER BY path ASC LIMIT ?
+      `);
+      const rows = fallbackStmt.all(term, term, term, term, limit) as any[];
+      return rows.map((r) => ({
+        ...r,
+        exports: JSON.parse(r.exports || '[]'),
+        imports: JSON.parse(r.imports || '[]'),
+      }));
+    }
+  }
+
 
   // AST Symbols
   public saveASTSymbols(symbols: ASTSymbol[]) {
@@ -399,7 +563,289 @@ export class GuppiDB {
     return stmt.all(term, term, term, term, limit) as any[];
   }
 
+  // Dependency Graph
+  public addDependencyEdge(edge: Omit<DependencyEdge, 'id' | 'created_at'>): DependencyEdge {
+    const id = `dep_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+    const now = new Date().toISOString();
+    const fullEdge: DependencyEdge = { ...edge, id, created_at: now };
+    const stmt = this.getStmt(`
+      INSERT INTO dependency_graph (id, source_symbol, target_symbol, edge_type, file_path, line_number, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `);
+    stmt.run(id, edge.source_symbol, edge.target_symbol, edge.edge_type, edge.file_path, edge.line_number, now);
+    return fullEdge;
+  }
+
+  public addDependencyEdgesBatch(edges: Omit<DependencyEdge, 'id' | 'created_at'>[]): DependencyEdge[] {
+    if (edges.length === 0) return [];
+    const now = new Date().toISOString();
+    const saved: DependencyEdge[] = [];
+    const insertStmt = this.getStmt(`
+      INSERT INTO dependency_graph (id, source_symbol, target_symbol, edge_type, file_path, line_number, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `);
+
+    const transaction = this.db.transaction(() => {
+      let idx = 0;
+      for (const edge of edges) {
+        const id = `dep_${Date.now()}_${idx++}_${Math.random().toString(36).substring(2, 6)}`;
+        const fullEdge: DependencyEdge = { ...edge, id, created_at: now };
+        insertStmt.run(id, edge.source_symbol, edge.target_symbol, edge.edge_type, edge.file_path, edge.line_number, now);
+        saved.push(fullEdge);
+      }
+    });
+
+    transaction();
+    return saved;
+  }
+
+
+  public getDependencyEdges(symbolOrPath?: string, limit: number = 100): DependencyEdge[] {
+    if (!symbolOrPath) {
+      const stmt = this.db.prepare('SELECT * FROM dependency_graph ORDER BY created_at DESC LIMIT ?');
+      return stmt.all(limit) as DependencyEdge[];
+    }
+    const stmt = this.db.prepare(`
+      SELECT * FROM dependency_graph
+      WHERE source_symbol LIKE ? OR target_symbol LIKE ? OR file_path LIKE ?
+      ORDER BY created_at DESC LIMIT ?
+    `);
+    const term = `%${symbolOrPath}%`;
+    return stmt.all(term, term, term, limit) as DependencyEdge[];
+  }
+
+  public clearDependencyEdgesForFile(filePath: string) {
+    const stmt = this.db.prepare('DELETE FROM dependency_graph WHERE file_path = ?');
+    stmt.run(filePath);
+  }
+
+  // Subagent Checkpoints & Context Handoff
+  public createSubagentCheckpoint(checkpoint: Omit<SubagentCheckpoint, 'id' | 'created_at'>): SubagentCheckpoint {
+    const id = `ckpt_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+    const now = new Date().toISOString();
+    const item: SubagentCheckpoint = { ...checkpoint, id, created_at: now };
+    const stmt = this.db.prepare(`
+      INSERT INTO subagent_checkpoints (id, parent_agent_id, subagent_role, task_summary, state_json, created_at)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `);
+    stmt.run(id, checkpoint.parent_agent_id, checkpoint.subagent_role, checkpoint.task_summary, checkpoint.state_json, now);
+    return item;
+  }
+
+  public getSubagentCheckpoints(limit: number = 20): SubagentCheckpoint[] {
+    const stmt = this.db.prepare('SELECT * FROM subagent_checkpoints ORDER BY created_at DESC LIMIT ?');
+    return stmt.all(limit) as SubagentCheckpoint[];
+  }
+
+  public getSubagentCheckpoint(id: string): SubagentCheckpoint | undefined {
+    const stmt = this.db.prepare('SELECT * FROM subagent_checkpoints WHERE id = ?');
+    return stmt.get(id) as SubagentCheckpoint | undefined;
+  }
+
+  // Execution Feedback & Auto-Fix
+  public logExecutionFeedback(record: Omit<ExecutionFeedbackRecord, 'id' | 'created_at'>): ExecutionFeedbackRecord {
+    const id = `fb_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+    const now = new Date().toISOString();
+    const item: ExecutionFeedbackRecord = { ...record, id, created_at: now };
+    const stmt = this.db.prepare(`
+      INSERT INTO execution_feedback (id, command_type, stdout, stderr, exit_code, matched_memory_id, proposed_fix, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    stmt.run(id, record.command_type, record.stdout || null, record.stderr || null, record.exit_code, record.matched_memory_id || null, record.proposed_fix || null, now);
+    return item;
+  }
+
+  public getRecentExecutionFeedback(limit: number = 20): ExecutionFeedbackRecord[] {
+    const stmt = this.db.prepare('SELECT * FROM execution_feedback ORDER BY created_at DESC LIMIT ?');
+    return stmt.all(limit) as ExecutionFeedbackRecord[];
+  }
+
+  // Shadow Backups & Guard Enforcer
+  public createShadowBackupRecord(record: Omit<ShadowBackupRecord, 'id' | 'created_at'>): ShadowBackupRecord {
+    const id = `bak_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+    const now = new Date().toISOString();
+    const item: ShadowBackupRecord = { ...record, id, created_at: now };
+    const stmt = this.db.prepare(`
+      INSERT INTO shadow_backups (id, file_path, backup_path, hash, created_at)
+      VALUES (?, ?, ?, ?, ?)
+    `);
+    stmt.run(id, record.file_path, record.backup_path, record.hash, now);
+    return item;
+  }
+
+  public getLatestShadowBackup(filePath: string): ShadowBackupRecord | undefined {
+    const stmt = this.db.prepare('SELECT * FROM shadow_backups WHERE file_path = ? ORDER BY created_at DESC LIMIT 1');
+    return stmt.get(filePath) as ShadowBackupRecord | undefined;
+  }
+
+  public getShadowBackups(limit: number = 20): ShadowBackupRecord[] {
+    const stmt = this.db.prepare('SELECT * FROM shadow_backups ORDER BY created_at DESC LIMIT ?');
+    return stmt.all(limit) as ShadowBackupRecord[];
+  }
+
+  // Task Execution Planner & Multi-Agent DAG Orchestrator
+  public createTaskPlan(title: string, goal: string): TaskPlan {
+    const id = `plan_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+    const now = new Date().toISOString();
+    const plan: TaskPlan = { id, title, goal, status: 'planning', created_at: now, updated_at: now };
+    const stmt = this.db.prepare(`
+      INSERT INTO task_plans (id, title, goal, status, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `);
+    stmt.run(id, title, goal, plan.status, now, now);
+    return plan;
+  }
+
+  public getTaskPlans(limit: number = 20): TaskPlan[] {
+    const stmt = this.db.prepare('SELECT * FROM task_plans ORDER BY updated_at DESC LIMIT ?');
+    return stmt.all(limit) as TaskPlan[];
+  }
+
+  public getTaskPlan(planId: string): TaskPlan | undefined {
+    const stmt = this.db.prepare('SELECT * FROM task_plans WHERE id = ?');
+    return stmt.get(planId) as TaskPlan | undefined;
+  }
+
+  public addTaskStep(step: Omit<TaskStep, 'id' | 'created_at' | 'updated_at'>): TaskStep {
+    const id = `step_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+    const now = new Date().toISOString();
+    const fullStep: TaskStep = { ...step, id, created_at: now, updated_at: now };
+    const stmt = this.db.prepare(`
+      INSERT INTO task_steps (id, plan_id, step_number, title, description, assigned_role, dependencies, status, result, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    stmt.run(id, step.plan_id, step.step_number, step.title, step.description, step.assigned_role, JSON.stringify(step.dependencies), step.status, step.result || null, now, now);
+    return fullStep;
+  }
+
+  public getTaskSteps(planId: string): TaskStep[] {
+    const stmt = this.db.prepare('SELECT * FROM task_steps WHERE plan_id = ? ORDER BY step_number ASC');
+    const rows = stmt.all(planId) as any[];
+    return rows.map((r) => ({ ...r, dependencies: JSON.parse(r.dependencies || '[]') }));
+  }
+
+  public updateTaskStepStatus(stepId: string, status: TaskStep['status'], result?: string) {
+    const now = new Date().toISOString();
+    const stmt = this.db.prepare('UPDATE task_steps SET status = ?, result = ?, updated_at = ? WHERE id = ?');
+    stmt.run(status, result || null, now, stepId);
+  }
+
+  // Decay-Ranked Episodic Agent Memory & Fact Graph
+  public addEpisodicMemory(memory: Omit<EpisodicMemoryRecord, 'id' | 'access_count' | 'decay_score' | 'created_at'>): EpisodicMemoryRecord {
+    const id = `ep_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+    const now = new Date().toISOString();
+    const rec: EpisodicMemoryRecord = {
+      ...memory,
+      id,
+      access_count: 1,
+      decay_score: memory.importance_score,
+      created_at: now,
+    };
+    const stmt = this.db.prepare(`
+      INSERT INTO episodic_memories (id, topic, content, memory_type, importance_score, access_count, last_accessed_at, decay_score, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    stmt.run(id, memory.topic, memory.content, memory.memory_type, memory.importance_score, 1, memory.last_accessed_at, memory.importance_score, now);
+    return rec;
+  }
+
+  public getEpisodicMemories(limit: number = 20): EpisodicMemoryRecord[] {
+    const stmt = this.db.prepare('SELECT * FROM episodic_memories ORDER BY decay_score DESC, last_accessed_at DESC LIMIT ?');
+    return stmt.all(limit) as EpisodicMemoryRecord[];
+  }
+
+  public addFactTriple(triple: Omit<FactTriple, 'id' | 'created_at'>): FactTriple {
+    const id = `fact_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+    const now = new Date().toISOString();
+    const item: FactTriple = { ...triple, id, created_at: now };
+    const stmt = this.db.prepare(`
+      INSERT INTO fact_triples (id, subject, relation, object, confidence, source, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `);
+    stmt.run(id, triple.subject, triple.relation, triple.object, triple.confidence, triple.source, now);
+
+    const ftsStmt = this.db.prepare(`
+      INSERT INTO fact_triples_fts (subject, relation, object, source)
+      VALUES (?, ?, ?, ?)
+    `);
+    ftsStmt.run(triple.subject, triple.relation, triple.object, triple.source);
+
+    return item;
+  }
+
+  public queryFactTriples(query: string, limit: number = 20): FactTriple[] {
+    if (!query) {
+      const stmt = this.db.prepare('SELECT * FROM fact_triples ORDER BY created_at DESC LIMIT ?');
+      return stmt.all(limit) as FactTriple[];
+    }
+    const stmt = this.db.prepare(`
+      SELECT * FROM fact_triples
+      WHERE subject LIKE ? OR relation LIKE ? OR object LIKE ? OR source LIKE ?
+      ORDER BY created_at DESC LIMIT ?
+    `);
+    const term = `%${query}%`;
+    return stmt.all(term, term, term, term, limit) as FactTriple[];
+  }
+
+  // Agent Evaluation & RAG Precision Benchmark Studio
+  public recordEvalRun(evalRecord: Omit<EvalRunRecord, 'id' | 'created_at'>): EvalRunRecord {
+    const id = `eval_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+    const now = new Date().toISOString();
+    const item: EvalRunRecord = { ...evalRecord, id, created_at: now };
+    const stmt = this.db.prepare(`
+      INSERT INTO eval_runs (id, agent_id, query_prompt, response_text, precision_score, faithfulness_score, latency_ms, token_cost, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    stmt.run(id, evalRecord.agent_id, evalRecord.query_prompt, evalRecord.response_text, evalRecord.precision_score, evalRecord.faithfulness_score, evalRecord.latency_ms, evalRecord.token_cost, now);
+    return item;
+  }
+
+  public getEvalRuns(limit: number = 20): EvalRunRecord[] {
+    const stmt = this.db.prepare('SELECT * FROM eval_runs ORDER BY created_at DESC LIMIT ?');
+    return stmt.all(limit) as EvalRunRecord[];
+  }
+
+  // AST Symbol Call Graph & Signature Mutation Simulator
+  public saveCallGraphNodesAndEdges(nodes: Omit<CallGraphNode, 'id'>[], edges: Omit<CallGraphEdge, 'id'>[]) {
+    const deleteNodes = this.db.prepare('DELETE FROM call_graph_nodes');
+    const deleteEdges = this.db.prepare('DELETE FROM call_graph_edges');
+
+    const insertNode = this.db.prepare(`
+      INSERT INTO call_graph_nodes (id, symbol_name, kind, file_path, line_number, signature)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `);
+
+    const insertEdge = this.db.prepare(`
+      INSERT INTO call_graph_edges (id, caller_symbol, callee_symbol, file_path, line_number, call_type)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `);
+
+    const transaction = this.db.transaction(() => {
+      deleteNodes.run();
+      deleteEdges.run();
+      nodes.forEach((n, idx) => insertNode.run(`cgn_${idx}_${n.symbol_name}`, n.symbol_name, n.kind, n.file_path, n.line_number, n.signature));
+      edges.forEach((e, idx) => insertEdge.run(`cge_${idx}`, e.caller_symbol, e.callee_symbol, e.file_path, e.line_number, e.call_type));
+    });
+
+    transaction();
+  }
+
+  public getCallGraphEdgesForSymbol(symbolName: string): CallGraphEdge[] {
+    const stmt = this.db.prepare(`
+      SELECT * FROM call_graph_edges
+      WHERE caller_symbol LIKE ? OR callee_symbol LIKE ?
+    `);
+    const term = `%${symbolName}%`;
+    return stmt.all(term, term) as CallGraphEdge[];
+  }
+
+  public getAllCallGraphNodes(): CallGraphNode[] {
+    const stmt = this.db.prepare('SELECT * FROM call_graph_nodes LIMIT 100');
+    return stmt.all() as CallGraphNode[];
+  }
+
   public close() {
     this.db.close();
   }
 }
+

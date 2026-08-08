@@ -4,8 +4,10 @@ import { glob } from 'glob';
 import ignoreFn from 'ignore';
 import { GuppiDB, CodeFileIndex, ASTSymbol } from '../db/client.js';
 import { ASTExtractor } from './ast.js';
+import { DependencyAnalyzer } from './dependency_analyzer.js';
 
 const ignore: any = (ignoreFn as any).default || ignoreFn;
+
 
 export interface OnboardingReport {
   workspacePath: string;
@@ -76,6 +78,8 @@ export class OnboardingEngine {
       framework = 'Go Workspace';
     }
 
+    const depAnalyzer = new DependencyAnalyzer(this.db);
+
     // 4. Traverse & Index Files
     for (const file of validFiles) {
       const fullPath = path.join(this.workspacePath, file);
@@ -93,11 +97,15 @@ export class OnboardingEngine {
           totalLines += lineCount;
 
           // Extract symbols
-          const symbols = ASTExtractor.extractSymbolsFromFile(fullPath, file);
+          const symbols = ASTExtractor.extractSymbolsFromFile(fullPath, file, content);
           allSymbols.push(...symbols);
 
+          // Build dependency graph edges
+          depAnalyzer.analyzeAndIndexFile(fullPath, content);
+
           // Extract imports/exports
-          const ie = ASTExtractor.extractImportsExports(fullPath);
+          const ie = ASTExtractor.extractImportsExports(fullPath, content);
+
 
           // First 3 lines summary
           const snippet = lines.slice(0, 5).join(' ').replace(/\s+/g, ' ').substring(0, 150);

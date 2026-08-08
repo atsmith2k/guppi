@@ -1,5 +1,10 @@
 node_modules/
 dist/
 .guppi/backups/
+.guppi/guppi.db
+.guppi/guppi.db-wal
+.guppi/guppi.db-shm
 *.log
 .DS_Store
+scratch/
+test-results/

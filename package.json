@@ -1,6 +1,6 @@
 {
   "name": "guppi",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "GUPPI — General-purpose Unifying Pluggable Intelligence & Agentic Sidecar",
   "main": "dist/server/index.js",
   "type": "module",

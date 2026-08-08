@@ -8,6 +8,10 @@ import { BrainstormEngine } from '../engine/brainstorm.js';
 import { SelfHealingEngine } from '../engine/self_heal.js';
 import { MultiRepoMeshEngine } from '../engine/mesh.js';
 import { TestGenEngine } from '../engine/test_gen.js';
+import { DependencyAnalyzer } from '../engine/dependency_analyzer.js';
+import { AgentHandoffEngine } from '../engine/agent_handoff.js';
+import { ExecutionFeedbackEngine } from '../engine/execution_feedback.js';
+import { GuardEnforcerEngine } from '../engine/guard_enforcer.js';
 import { GuppiWebSocketServer } from './ws.js';
 
 export function createAPIRouter(db: GuppiDB, wsServer?: GuppiWebSocketServer): Router {
@@ -20,6 +24,10 @@ export function createAPIRouter(db: GuppiDB, wsServer?: GuppiWebSocketServer): R
   const selfHealingEngine = new SelfHealingEngine(db);
   const meshEngine = new MultiRepoMeshEngine(db);
   const testGenEngine = new TestGenEngine(db);
+  const dependencyAnalyzer = new DependencyAnalyzer(db);
+  const handoffEngine = new AgentHandoffEngine(db);
+  const feedbackEngine = new ExecutionFeedbackEngine(db);
+  const guardEnforcer = new GuardEnforcerEngine(db);
 
   // Status & Health
   router.get('/status', (req, res) => {
@@ -279,5 +287,192 @@ export function createAPIRouter(db: GuppiDB, wsServer?: GuppiWebSocketServer): R
     res.json({ success: true, task });
   });
 
+  // Dependency Graph & Impact Analysis
+  router.get('/dependencies', (req, res) => {
+    const q = (req.query.q as string) || '';
+    const edges = db.getDependencyEdges(q, 100);
+    res.json({ edges });
+  });
+
+  router.post('/dependencies/impact', (req, res) => {
+    const { symbolOrPath } = req.body;
+    if (!symbolOrPath) {
+      res.status(400).json({ error: 'symbolOrPath is required' });
+      return;
+    }
+    const report = dependencyAnalyzer.evaluateImpact(symbolOrPath);
+    res.json({ report });
+  });
+
+  // Subagent Checkpoints & Handoff
+  router.get('/checkpoints', (req, res) => {
+    const checkpoints = handoffEngine.listCheckpoints(20);
+    res.json({ checkpoints });
+  });
+
+  router.post('/checkpoints', (req, res) => {
+    const { parentAgentId, subagentRole, taskSummary, stateObj } = req.body;
+    const checkpoint = handoffEngine.saveCheckpoint(parentAgentId || 'agent', subagentRole || 'subagent', taskSummary || '', stateObj || {});
+    if (wsServer) wsServer.broadcast('checkpoint_created', checkpoint);
+    res.json({ success: true, checkpoint });
+  });
+
+  router.get('/checkpoints/:id/package', (req, res) => {
+    const { id } = req.params;
+    try {
+      const pkg = handoffEngine.generateHandoffPackage(id);
+      res.json({ success: true, package: pkg });
+    } catch (err: any) {
+      res.status(404).json({ success: false, error: err.message });
+    }
+  });
+
+
+  // Execution Feedback & Auto-Fix
+  router.post('/feedback/suggest', (req, res) => {
+    const { commandType, stdout, stderr, exitCode, filePath } = req.body;
+    const result = feedbackEngine.analyzeAndProposeFix(commandType || 'build', stdout, stderr, exitCode, filePath);
+    if (wsServer) wsServer.broadcast('auto_fix_proposed', result);
+    res.json({ success: true, ...result });
+  });
+
+  // Guard Enforcer & Rollback
+  router.post('/guard/enforce', (req, res) => {
+    const { filePath, proposedContent } = req.body;
+    const result = guardEnforcer.preparePreFlight(filePath, proposedContent);
+    res.json({ success: true, result });
+  });
+
+  router.post('/guard/rollback', (req, res) => {
+    const { filePath } = req.body;
+    const result = guardEnforcer.rollbackFile(filePath);
+    res.json(result);
+  });
+
+  // Task Execution Planner Endpoints
+  router.get('/tasks', (req, res) => {
+    const { TaskPlannerEngine } = require('../engine/task_planner.js');
+    const planner = new TaskPlannerEngine(db);
+    const plans = planner.listActivePlans(20);
+    res.json({ plans });
+  });
+
+  router.post('/tasks', (req, res) => {
+    const { goal, title } = req.body;
+    if (!goal) {
+      res.status(400).json({ error: 'goal is required' });
+      return;
+    }
+    const { TaskPlannerEngine } = require('../engine/task_planner.js');
+    const planner = new TaskPlannerEngine(db);
+    const created = planner.createPlan(goal, title);
+    if (wsServer) wsServer.broadcast('task_plan_created', created);
+    res.json({ success: true, ...created });
+  });
+
+  router.post('/tasks/step/update', (req, res) => {
+    const { stepId, status, result } = req.body;
+    if (!stepId || !status) {
+      res.status(400).json({ error: 'stepId and status are required' });
+      return;
+    }
+    const { TaskPlannerEngine } = require('../engine/task_planner.js');
+    const planner = new TaskPlannerEngine(db);
+    planner.updateStepStatus(stepId, status, result);
+    if (wsServer) wsServer.broadcast('task_step_updated', { stepId, status, result });
+    res.json({ success: true });
+  });
+
+  // Episodic Memory & Fact Graph Endpoints
+  router.get('/episodic', (req, res) => {
+    const { EpisodicMemoryEngine } = require('../engine/episodic_memory.js');
+    const memEngine = new EpisodicMemoryEngine(db);
+    const memories = memEngine.getRankedMemories(30);
+    res.json({ memories });
+  });
+
+  router.post('/episodic', (req, res) => {
+    const { topic, content, memoryType, importanceScore } = req.body;
+    if (!topic || !content) {
+      res.status(400).json({ error: 'topic and content are required' });
+      return;
+    }
+    const { EpisodicMemoryEngine } = require('../engine/episodic_memory.js');
+    const memEngine = new EpisodicMemoryEngine(db);
+    const memory = memEngine.remember(topic, content, memoryType, importanceScore);
+    if (wsServer) wsServer.broadcast('episodic_memory_added', memory);
+    res.json({ success: true, memory });
+  });
+
+  router.get('/episodic/facts', (req, res) => {
+    const q = (req.query.q as string) || '';
+    const { EpisodicMemoryEngine } = require('../engine/episodic_memory.js');
+    const memEngine = new EpisodicMemoryEngine(db);
+    const facts = memEngine.queryFacts(q, 50);
+    res.json({ facts });
+  });
+
+  router.post('/episodic/facts/extract', (req, res) => {
+    const { text, source } = req.body;
+    if (!text) {
+      res.status(400).json({ error: 'text is required' });
+      return;
+    }
+    const { EpisodicMemoryEngine } = require('../engine/episodic_memory.js');
+    const memEngine = new EpisodicMemoryEngine(db);
+    const extracted = memEngine.extractFactTriples(text, source || 'manual_entry');
+    res.json({ success: true, count: extracted.length, facts: extracted });
+  });
+
+  // Agent Evaluation Endpoints
+  router.get('/eval/report', (req, res) => {
+    const { AgentEvalEngine } = require('../engine/agent_eval.js');
+    const evalEngine = new AgentEvalEngine(db);
+    const report = evalEngine.getBenchmarkReport(50);
+    res.json(report);
+  });
+
+  router.post('/eval/record', (req, res) => {
+    const { agentId, queryPrompt, responseText, latencyMs, tokenCost, contextItems } = req.body;
+    if (!agentId || !queryPrompt || !responseText) {
+      res.status(400).json({ error: 'agentId, queryPrompt, and responseText are required' });
+      return;
+    }
+    const { AgentEvalEngine } = require('../engine/agent_eval.js');
+    const evalEngine = new AgentEvalEngine(db);
+    const record = evalEngine.evaluateRun(agentId, queryPrompt, responseText, latencyMs || 100, tokenCost || 0, contextItems || []);
+    if (wsServer) wsServer.broadcast('eval_run_recorded', record);
+    res.json({ success: true, record });
+  });
+
+  // Call Graph & Signature Mutation Simulator Endpoints
+  router.post('/callgraph/build', (req, res) => {
+    const { SymbolCallGraphEngine } = require('../engine/symbol_call_graph.js');
+    const cgEngine = new SymbolCallGraphEngine(db);
+    const graph = cgEngine.buildCallGraph();
+    res.json({ success: true, nodeCount: graph.nodes.length, edgeCount: graph.edges.length, graph });
+  });
+
+  router.get('/callgraph/symbol', (req, res) => {
+    const symbolName = (req.query.symbol as string) || '';
+    const edges = db.getCallGraphEdgesForSymbol(symbolName);
+    const allNodes = db.getAllCallGraphNodes();
+    res.json({ symbolName, edges, allNodes });
+  });
+
+  router.post('/callgraph/simulate', (req, res) => {
+    const { targetSymbol, proposedSignature } = req.body;
+    if (!targetSymbol || !proposedSignature) {
+      res.status(400).json({ error: 'targetSymbol and proposedSignature are required' });
+      return;
+    }
+    const { SymbolCallGraphEngine } = require('../engine/symbol_call_graph.js');
+    const cgEngine = new SymbolCallGraphEngine(db);
+    const simulation = cgEngine.simulateSignatureMutation(targetSymbol, proposedSignature);
+    res.json({ success: true, simulation });
+  });
+
   return router;
 }
+
+
