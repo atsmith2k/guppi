@@ -1,0 +1,5 @@
+node_modules/
+dist/
+.guppi/backups/
+*.log
+.DS_Store

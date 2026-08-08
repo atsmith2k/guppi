@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "guppi": {
+      "command": "guppi",
+      "args": [
+        "mcp"
+      ],
+      "env": {
+        "GUPPI_WORKSPACE": "/Users/ashton/git/something"
+      }
+    }
+  }
+}
