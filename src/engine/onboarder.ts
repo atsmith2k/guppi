@@ -1,9 +1,11 @@
 import fs from 'fs';
 import path from 'path';
 import { glob } from 'glob';
-import ignore from 'ignore';
+import ignoreFn from 'ignore';
 import { GuppiDB, CodeFileIndex, ASTSymbol } from '../db/client.js';
 import { ASTExtractor } from './ast.js';
+
+const ignore: any = (ignoreFn as any).default || ignoreFn;
 
 export interface OnboardingReport {
   workspacePath: string;

@@ -4,6 +4,9 @@ import path from 'path';
 
 export default defineConfig({
   plugins: [react()],
+  define: {
+    'process.env': {},
+  },
   root: './',
   build: {
     outDir: 'dist/dashboard',
