@@ -22,7 +22,7 @@
     "build:cli": "tsc",
     "build:ui": "vite build",
     "build": "npm run build:cli && npm run build:ui",
-    "test": "node --import tsx --test test/poached_features.spec.ts test/agentic_assist.spec.ts test/lst_traversal.spec.ts",
+    "test": "node --import tsx --test --test-concurrency=1 test/poached_features.spec.ts test/agentic_assist.spec.ts test/lst_traversal.spec.ts",
     "prepublishOnly": "npm run build && npm test",
     "pack:check": "npm pack --dry-run",
     "start": "node bin/guppi.js start",
