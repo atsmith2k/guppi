@@ -6,9 +6,41 @@ import { GuppiDB } from '../src/db/client.js';
 import { LSTTraversalEngine } from '../src/engine/lst_traversal.js';
 import { createLSTTraversalPillar } from '../src/server/pillars/lst_pillar.js';
 
+const testWorkspace = path.join(process.cwd(), 'scratch', 'test_lst');
+if (!fs.existsSync(testWorkspace)) {
+  fs.mkdirSync(testWorkspace, { recursive: true });
+}
+
 test('GUPPI LST & Serena Codebase Traversal Suite', async (t) => {
-  const db = new GuppiDB(process.cwd());
+  const db = new GuppiDB(testWorkspace);
   const lstEngine = new LSTTraversalEngine(db, process.cwd());
+
+  // Insert mock symbol and code index to make test 100% self-contained in clean CI environments
+  db.saveASTSymbols([
+    {
+      id: 'sym_test_guppi_db',
+      file_path: 'src/db/client.ts',
+      symbol_name: 'GuppiDB',
+      kind: 'class',
+      line_start: 10,
+      line_end: 50,
+      signature: 'export class GuppiDB',
+    },
+  ]);
+
+  db.saveCodeIndex([
+    {
+      path: 'src/engine/lst_traversal.ts',
+      file_type: 'typescript',
+      size: 500,
+      line_count: 50,
+      summary: 'LST Engine',
+      exports: ['LSTTraversalEngine'],
+      imports: ['GuppiDB'],
+      hash: 'abc',
+      indexed_at: new Date().toISOString(),
+    },
+  ]);
 
   await t.test('1. LST Parsing & Tree Selection - Parses AST losslessly', () => {
     const root = lstEngine.parseFileToLST('src/engine/lst_traversal.ts');
@@ -22,6 +54,7 @@ test('GUPPI LST & Serena Codebase Traversal Suite', async (t) => {
 
   await t.test('2. Serena-Style Reference Tracer - Finds cross-file call references', () => {
     const refs = lstEngine.findReferences('GuppiDB');
+    assert.ok(Array.isArray(refs));
     assert.ok(refs.length > 0);
   });
 
