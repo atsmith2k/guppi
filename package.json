@@ -1,5 +1,5 @@
 {
-  "name": "guppi",
+  "name": "@atsmith2k/guppi",
   "version": "2.0.0",
   "description": "GUPPI — General-purpose Unifying Pluggable Intelligence & Agentic Sidecar",
   "main": "dist/server/index.js",

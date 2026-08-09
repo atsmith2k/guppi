@@ -70,10 +70,10 @@ Once published, users worldwide can install and use GUPPI via:
 
 ```bash
 # Global installation
-npm install -g guppi
+npm install -g @atsmith2k/guppi
 
 # Instant npx execution without global install
-npx guppi status
+npx @atsmith2k/guppi status
 
 # Initialize in any codebase
 guppi init
