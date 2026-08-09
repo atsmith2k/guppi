@@ -1,6 +1,7 @@
 import Database from 'better-sqlite3';
 import path from 'path';
 import fs from 'fs';
+import crypto from 'crypto';
 import { CREATE_TABLES_SQL } from './schema.js';
 
 export interface MemoryItem {
@@ -661,6 +662,21 @@ export class GuppiDB {
   }
 
   // Shadow Backups & Guard Enforcer
+  public createShadowBackup(filePath: string): ShadowBackupRecord {
+    const absPath = path.isAbsolute(filePath) ? filePath : path.join(process.cwd(), filePath);
+    if (!fs.existsSync(absPath)) throw new Error(`File not found for shadow backup: ${filePath}`);
+    const backupDir = path.join(path.dirname(this.dbPath), 'backups');
+    if (!fs.existsSync(backupDir)) fs.mkdirSync(backupDir, { recursive: true });
+
+    const content = fs.readFileSync(absPath, 'utf-8');
+    const hash = crypto.createHash('sha256').update(content).digest('hex').substring(0, 12);
+    const backupFilename = `${path.basename(absPath)}_${Date.now()}_${hash}.bak`;
+    const backupPath = path.join(backupDir, backupFilename);
+
+    fs.writeFileSync(backupPath, content, 'utf-8');
+    return this.createShadowBackupRecord({ file_path: absPath, backup_path: backupPath, hash });
+  }
+
   public createShadowBackupRecord(record: Omit<ShadowBackupRecord, 'id' | 'created_at'>): ShadowBackupRecord {
     const id = `bak_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
     const now = new Date().toISOString();

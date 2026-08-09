@@ -47,18 +47,7 @@ export class GuardEnforcerEngine {
 
     // Create shadow backup if file exists on disk
     if (fs.existsSync(filePath)) {
-      const content = fs.readFileSync(filePath, 'utf-8');
-      const hash = crypto.createHash('sha256').update(content).digest('hex').substring(0, 12);
-      const backupFilename = `${path.basename(filePath)}_${Date.now()}_${hash}.bak`;
-      const backupPath = path.join(this.backupDir, backupFilename);
-
-      fs.writeFileSync(backupPath, content, 'utf-8');
-
-      backupRecord = this.db.createShadowBackupRecord({
-        file_path: filePath,
-        backup_path: backupPath,
-        hash,
-      });
+      backupRecord = this.db.createShadowBackup(filePath);
     }
 
     return {
