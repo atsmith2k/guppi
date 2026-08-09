@@ -52,15 +52,24 @@ export const App: React.FC = () => {
         <div>
           {/* Logo & Brand */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '0 12px 24px 12px', borderBottom: '1px solid var(--bg-card-border)' }}>
-            <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: 'linear-gradient(135deg, var(--accent-cyan), var(--accent-purple))', display: 'flex', justifyContent: 'center', alignItems: 'center', fontSize: '1.2rem', boxShadow: '0 4px 12px rgba(6,182,212,0.3)' }}>
-              🐟
+            <div style={{ width: '42px', height: '42px', borderRadius: '10px', background: 'linear-gradient(135deg, rgba(56, 189, 248, 0.15), rgba(168, 85, 247, 0.15))', border: '1px solid rgba(56, 189, 248, 0.4)', display: 'flex', justifyContent: 'center', alignItems: 'center', boxShadow: '0 0 16px rgba(56, 189, 248, 0.25)' }}>
+              <svg width="26" height="26" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <polygon points="50,5 90,25 90,75 50,95 10,75 10,25" stroke="#38BDF8" strokeWidth="6" strokeDasharray="16 8" fill="none" />
+                <path d="M 30,30 L 70,30 C 80,30 85,40 85,50 L 85,60 C 85,80 70,90 40,90 C 20,90 15,80 15,65 L 15,50 L 45,50 L 45,65 C 45,72 50,75 60,75 C 68,75 70,70 70,60 L 70,50 L 50,50 Z" fill="url(#appLogoGrad)" />
+                <defs>
+                  <linearGradient id="appLogoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#38BDF8" />
+                    <stop offset="100%" stopColor="#A855F7" />
+                  </linearGradient>
+                </defs>
+              </svg>
             </div>
             <div>
-              <div style={{ fontWeight: 800, fontSize: '1.2rem', letterSpacing: '-0.02em', background: 'linear-gradient(90deg, #fff, #94a3b8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+              <div style={{ fontWeight: 900, fontSize: '1.3rem', letterSpacing: '0.05em', background: 'linear-gradient(90deg, #F8FAFC, #94A3B8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', fontFamily: 'var(--font-sans)' }}>
                 GUPPI
               </div>
-              <div style={{ fontSize: '0.72rem', color: 'var(--accent-cyan)', fontWeight: 600, letterSpacing: '0.05em' }}>
-                AGENTIC SIDECAR
+              <div style={{ fontSize: '0.7rem', color: 'var(--accent-cyan)', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                Pluggable Intelligence
               </div>
             </div>
           </div>

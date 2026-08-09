@@ -1,20 +1,33 @@
-# 🐟 GUPPI — General-purpose Unifying Pluggable Intelligence
+<p align="center">
+  <img src="assets/banner.svg" alt="GUPPI — General-purpose Unifying Pluggable Intelligence Header Banner" width="100%" />
+</p>
 
-> **A standalone agentic sidecar, RAG memory engine, Lossless Semantic Tree (LST) code compressor, and telemetry control deck designed to plug alongside any AI coding agent.**
+<p align="center">
+  <strong>The high-performance agentic sidecar, LST memory engine, & telemetry control deck built for real AI workflows.</strong>
+</p>
 
-[![Node.js](https://img.shields.io/badge/Node.js-v22.22+-emerald?style=flat-square&logo=node.js)](https://nodejs.org)
-[![SQLite](https://img.shields.io/badge/Database-SQLite_WAL-blue?style=flat-square&logo=sqlite)](https://sqlite.org)
-[![MCP](https://img.shields.io/badge/Protocol-Model_Context_Protocol-purple?style=flat-square)](https://modelcontextprotocol.io)
-[![Privacy](https://img.shields.io/badge/Privacy-100%25_Local_%26_Offline-success?style=flat-square)]()
-[![License](https://img.shields.io/badge/License-MIT-blue?style=flat-square)](LICENSE)
+<p align="center">
+  <a href="https://nodejs.org"><img src="https://img.shields.io/badge/Node.js-v20.0+-339933?style=for-the-badge&logo=node.js&logoColor=white" alt="Node.js" /></a>
+  <a href="https://www.typescriptlang.org"><img src="https://img.shields.io/badge/TypeScript-v5.4+-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript" /></a>
+  <a href="https://modelcontextprotocol.io"><img src="https://img.shields.io/badge/Protocol-MCP%20Stdio%20%26%20HTTP-8B5CF6?style=for-the-badge&logo=protocol" alt="MCP Protocol" /></a>
+  <a href="https://sqlite.org"><img src="https://img.shields.io/badge/Database-SQLite%20WAL%20%2B%20FTS5-003B57?style=for-the-badge&logo=sqlite&logoColor=white" alt="SQLite" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-00F2FE?style=for-the-badge" alt="License" /></a>
+  <img src="https://img.shields.io/badge/Privacy-100%25%20Local%20%26%20Offline-10B981?style=for-the-badge" alt="Privacy Guaranteed" />
+</p>
 
 ---
 
 ## 🌟 Overview
 
-**GUPPI** (*General-purpose Unifying Pluggable Intelligence*) is an open-source, plug-and-play sidecar daemon and memory engine that hooks into your development workspace alongside primary AI agents (**Antigravity CLI**, **Claude Code**, **Cursor**, **Windsurf**, **Pi**, **AutoGen**, **CrewAI**, **Aider**).
+**GUPPI** (*General-purpose Unifying Pluggable Intelligence*) is an enterprise-grade, plug-and-play agentic sidecar daemon, RAG memory engine, and real-time telemetry deck. GUPPI hooks directly into development workspaces alongside primary AI coding tools (**Antigravity CLI**, **Claude Code**, **Cursor**, **Windsurf**, **Pi**, **AutoGen**, **CrewAI**, **Aider**).
 
-Instead of replacing existing agentic workflows, GUPPI operates in the background as an **"intelligent second brain"** — programmatically indexing AST symbols, maintaining long-term RAG memory, parsing Lossless Semantic Trees (LSTs), compressing prompts via AST code skeletonization, monitoring git diff histories, running pre-flight safety guardrails, and serving an interactive **Web Control Deck** on `http://localhost:3737`.
+Rather than replacing your existing AI agentic workflows, GUPPI acts as an **"intelligent second brain"** operating in the background:
+- ⚡ **Programmatically indexes AST symbols** & Lossless Semantic Trees (LST) for instant token-compressed code navigation (~70-80% token savings).
+- 🧠 **Maintains long-term decay-ranked RAG memory** and extracts subject-relation-object Fact Graphs across agent sessions.
+- 📋 **Orchestrates multi-agent DAG task plans** with structured session handoff checkpoints.
+- 🛡️ **Enforces pre-flight safety guardrails**, secret detection, and non-destructive shadow file backups before code mutations.
+- 🧪 **Benchmarks agent precision, faithfulness & latency** (DeepEval/AgentOps style) with auto-generated AST unit test suites.
+- 🎛️ **Serves a glassmorphic Web Control Deck** at `http://localhost:3737`.
 
 ---
 
@@ -76,7 +89,7 @@ guppi mcp
 
 ## 🔌 Agentic Integration (Model Context Protocol - MCP)
 
-Add this configuration snippet to your primary agent's settings (e.g. `mcp_config.json` or `.guppi/mcp.json`):
+Add this configuration snippet to your primary agent's settings (e.g., `mcp_config.json` or `.guppi/mcp.json`):
 
 ```json
 {
@@ -170,6 +183,9 @@ GUPPI exposes standard MCP Resources that agents can browse or read:
 
 ```
 /guppi
+├── assets/
+│   ├── logo.svg                  # Vector SVG brand emblem
+│   └── banner.svg                # Header hero banner SVG
 ├── bin/
 │   └── guppi.js                  # Executable CLI entrypoint
 ├── docs/

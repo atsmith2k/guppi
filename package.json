@@ -3,16 +3,41 @@
   "version": "2.0.0",
   "description": "GUPPI — General-purpose Unifying Pluggable Intelligence & Agentic Sidecar",
   "main": "dist/server/index.js",
+  "module": "dist/server/index.js",
+  "types": "dist/server/index.d.ts",
   "type": "module",
   "bin": {
     "guppi": "./bin/guppi.js"
   },
+  "files": [
+    "dist",
+    "bin",
+    "assets",
+    "docs",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
   "scripts": {
     "build:cli": "tsc",
     "build:ui": "vite build",
     "build": "npm run build:cli && npm run build:ui",
+    "test": "npx tsx test/poached_features.spec.ts && npx tsx test/agentic_assist.spec.ts",
+    "prepublishOnly": "npm run build && npm test",
+    "pack:check": "npm pack --dry-run",
     "start": "node bin/guppi.js start",
     "dev": "tsx src/cli/main.ts start"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/atsmith2k/guppi.git"
+  },
+  "bugs": {
+    "url": "https://github.com/atsmith2k/guppi/issues"
+  },
+  "homepage": "https://github.com/atsmith2k/guppi#readme",
+  "publishConfig": {
+    "access": "public"
   },
   "keywords": [
     "agentic",
@@ -21,9 +46,12 @@
     "sidecar",
     "memory",
     "onboarding",
-    "telemetry"
+    "telemetry",
+    "model-context-protocol",
+    "developer-tools",
+    "codebase-indexing"
   ],
-  "author": "",
+  "author": "GUPPI Development Team",
   "license": "MIT",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.2.0",
