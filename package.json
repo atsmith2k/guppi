@@ -1,6 +1,6 @@
 {
   "name": "@atsmith2k/guppi",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "description": "GUPPI — General-purpose Unifying Pluggable Intelligence & Agentic Sidecar",
   "main": "dist/server/index.js",
   "module": "dist/server/index.js",
@@ -63,6 +63,7 @@
     "lucide-react": "^0.378.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "typescript": "^5.4.5",
     "ws": "^8.17.0"
   },
   "devDependencies": {
@@ -75,7 +76,6 @@
     "@types/ws": "^8.5.10",
     "@vitejs/plugin-react": "^4.2.1",
     "tsx": "^4.10.5",
-    "typescript": "^5.4.5",
     "vite": "^5.2.11"
   }
 }
