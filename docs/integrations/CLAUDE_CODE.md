@@ -1,10 +1,10 @@
-# 🤖 Integrating GUPPI with Anthropic's Claude Code CLI
+# Integrating GUPPI with Anthropic's Claude Code CLI
 
 This guide demonstrates how to instrument **GUPPI** alongside **Claude Code CLI** as a background MCP sidecar server and memory engine.
 
 ---
 
-## 🛠️ Step-by-Step Setup
+## Step-by-Step Setup
 
 ### Step 1: Install GUPPI Globally
 ```bash
@@ -45,13 +45,14 @@ Claude Code will automatically detect GUPPI's 25 MCP tools and Virtual Context F
 
 ---
 
-## 💡 Recommended System Prompt Snippet
+## Recommended System Prompt Snippet
 
 Add this instruction to your project's `CLAUDE.md` or system prompt:
 
 ```markdown
-## 🐟 GUPPI Sidecar Instrumentation
+## GUPPI Sidecar Instrumentation
 - Use `guppi_query_context` or `guppi_lst_find_symbols` before writing large edits to query indexed symbols and architectural rules.
 - Store key architectural decisions using `guppi_remember`.
 - Inspect folded AST code skeletons using `guppi_lst_skeleton_slice` to save token costs.
 ```
+

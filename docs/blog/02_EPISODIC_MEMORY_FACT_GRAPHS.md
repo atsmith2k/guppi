@@ -1,16 +1,16 @@
-# 🧠 Decay-Ranked Episodic Memory & Fact Graph Extractions for Autonomous AI Agents
+# Decay-Ranked Episodic Memory & Fact Graph Extractions for Autonomous AI Agents
 
-> **By the GUPPI Development Team** • *August 2026*
+> **GUPPI Engineering Team** • *August 2026*
 
-When building autonomous AI coding agents, one of the biggest bottlenecks is **session amnesia**. Once an agent session ends, architectural decisions, bug solutions, and variable contracts are lost unless recorded into persistent memory.
+When building autonomous AI coding agents, one of the primary operational challenges is session state retention. Once an agent session concludes, architectural decisions, bug solutions, and interface contracts may be lost unless stored in persistent memory.
 
-In **GUPPI** (*General-purpose Unifying Pluggable Intelligence*), we combined Ebbinghaus decay-ranked episodic memory with subject-relation-object Fact Graph extraction (poached from Mem0 & MemGPT) to give AI agents an intelligent, self-cleaning "second brain".
+In **GUPPI** (*General-purpose Unifying Pluggable Intelligence*), we combined Ebbinghaus decay-ranked episodic memory with subject-relation-object Fact Graph extraction to provide persistent, decay-weighted memory management across agent sessions.
 
 ---
 
-## 📉 Ebbinghaus Memory Decay Ranking
+## Ebbinghaus Memory Decay Ranking
 
-Not all memories are equally relevant over time. GUPPI scores each stored episodic memory using an adapted **Ebbinghaus Forgetting Curve**:
+Not all memories carry equal weight over time. GUPPI scores stored episodic memory using an adapted **Ebbinghaus Forgetting Curve**:
 
 $$\text{DecayScore} = \text{ImportanceScore} \times e^{-\lambda \cdot \Delta t}$$
 
@@ -19,11 +19,11 @@ Where:
 - $\lambda$ is the decay half-life parameter.
 - $\Delta t$ is elapsed time in hours since last access or reinforcement.
 
-When an agent queries GUPPI RAG memory via `guppi query` or `guppi_episodic_remember`, high-importance decisions remain active while transient scratchpad notes decay naturally.
+When an agent queries GUPPI RAG memory via `guppi query` or `guppi_episodic_remember`, high-importance decisions remain active while transient notes decay over time.
 
 ---
 
-## 🕸️ Subject-Relation-Object Fact Graph Extractions
+## Subject-Relation-Object Fact Graph Extractions
 
 GUPPI automatically parses text memories into structured **Fact Triples**:
 
@@ -41,17 +41,18 @@ Agents can browse the complete extracted Fact Graph via the MCP Resource `guppi:
 
 ---
 
-## ⚡ Try GUPPI Today
+## Availability and Usage
 
-GUPPI is 100% local, offline, and open-source under the MIT license:
+GUPPI is local, offline, and open-source under the MIT license:
 
 ```bash
 # Install globally
 npm install -g @atsmith2k/guppi
 
-# Query RAG memory & fact graph
+# Query RAG memory and fact graph
 guppi query "SQLite WAL"
 guppi facts "GuppiDB"
 ```
 
-Check out the full repository on GitHub: [`github.com/atsmith2k/guppi`](https://github.com/atsmith2k/guppi).
+Repository: [`github.com/atsmith2k/guppi`](https://github.com/atsmith2k/guppi).
+

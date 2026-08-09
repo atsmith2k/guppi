@@ -1,19 +1,19 @@
-# ⚡ How We Built a Lossless Semantic Tree (LST) Engine to Cut AI Agent Token Costs by 75%
+# How We Built a Lossless Semantic Tree (LST) Engine to Cut AI Agent Token Costs by 75%
 
-> **By the GUPPI Development Team** • *August 2026*
+> **GUPPI Engineering Team** • *August 2026*
 
-As LLM context windows expand, developers are increasingly trusting autonomous AI coding agents (**Claude Code**, **Cursor**, **Antigravity CLI**, **Aider**) to work inside multi-thousand-line codebases. However, passing entire source files into prompt context leads to two massive issues:
+As LLM context windows expand, developers increasingly rely on autonomous AI coding agents (such as Claude Code, Cursor, Antigravity CLI, and Aider) to work inside multi-thousand-line codebases. Passing entire source files into prompt context leads to two key operational challenges:
 
-1. **Exponential Token Costs**: Feeding tens of thousands of lines of implementation code into context window loops burns through token budgets at alarming rates.
-2. **"Lost in the Middle" Degradation**: Pushing massive code bodies into context causes models to miss critical architectural signatures, resulting in halluncinated variable names and broken method calls.
+1. **High Token Costs**: Feeding tens of thousands of lines of implementation code into context window loops consumes token budgets rapidly.
+2. **Context Degradation**: Pushing large code bodies into context can cause models to miss critical architectural signatures, leading to incorrect variable names and method calls.
 
-To solve this, we built **GUPPI** (*General-purpose Unifying Pluggable Intelligence*) with a Serena-style **Lossless Semantic Tree (LST)** code skeletonization engine.
+To address this, **GUPPI** (*General-purpose Unifying Pluggable Intelligence*) includes a **Lossless Semantic Tree (LST)** code skeletonization engine.
 
 ---
 
-## 🌳 What is a Lossless Semantic Tree (LST)?
+## What is a Lossless Semantic Tree (LST)?
 
-Unlike traditional regex or naive AST truncation that drops structural context, an **LST** parses source files into scope-aware semantic nodes using TypeScript/Babel AST parsers:
+Unlike regex matching or simple line truncation that removes structural context, an **LST** parses source files into scope-aware semantic nodes using TypeScript/Babel AST parsers:
 
 ```
 SourceFile (src/engine/lst_traversal.ts)
@@ -26,23 +26,23 @@ SourceFile (src/engine/lst_traversal.ts)
     └── MethodDeclaration (findReferences) [Folded Body]
 ```
 
-By folding function and class implementation bodies while preserving **exports, import statements, type annotations, JSDoc strings, and method signatures**, GUPPI produces a token-compressed AST skeleton (~70-80% smaller) that preserves 100% of the semantic contracts required for reasoning.
+By folding function and class implementation bodies while preserving **exports, import statements, type annotations, JSDoc strings, and method signatures**, GUPPI produces a token-compressed AST skeleton (~70–80% smaller) that preserves the semantic contracts required for reasoning.
 
 ---
 
-## 📊 Token Benchmark Comparison
+## Token Benchmark Comparison
 
-Here is how GUPPI's LST Skeletonization compares on a 1,200-line engine module (`lst_traversal.ts`):
+Below is a comparison of GUPPI's LST Skeletonization on a 1,200-line engine module (`lst_traversal.ts`):
 
 | Representation Format | Token Count | Cost Ratio | Semantic Precision |
 | :--- | :--- | :--- | :--- |
 | **Raw Uncompressed Source Code** | `12,840 tokens` | `1.00x` | 100% |
-| **Naive Line Truncation (Head 50 lines)** | `520 tokens` | `0.04x` | 12% (Missing methods) |
+| **Line Truncation (Head 50 lines)** | `520 tokens` | `0.04x` | 12% (Missing methods) |
 | **GUPPI LST Folded Code Skeleton** | `2,450 tokens` | `0.19x` | **98% (Preserves signatures)** |
 
 ---
 
-## 🛠️ How to Instrument GUPPI LST in Your Workflow
+## Instrumenting GUPPI LST in Your Workflow
 
 GUPPI exposes its LST Engine via standard **MCP Tools** and **Virtual Context Filesystem URIs**:
 
@@ -70,7 +70,7 @@ guppi refs GuppiDB
 
 ---
 
-## 📖 Summary & Open Source Availability
+## Summary & Availability
 
 GUPPI is open-source under the MIT License and published on NPM:
 
@@ -78,4 +78,5 @@ GUPPI is open-source under the MIT License and published on NPM:
 npm install -g @atsmith2k/guppi
 ```
 
-Check out the full repository on GitHub: [`github.com/atsmith2k/guppi`](https://github.com/atsmith2k/guppi).
+Repository: [`github.com/atsmith2k/guppi`](https://github.com/atsmith2k/guppi).
+

@@ -1,20 +1,20 @@
-# 🤖 GUPPI Agentic Instrumentation & Workflow Guide
+# GUPPI Agentic Instrumentation & Workflow Guide
 
-> **How to connect, instrument, and optimize AI CLI Coding Agents (Antigravity CLI, Claude Code, Cursor, Windsurf, Pi, Aider) using GUPPI as a persistent intelligence sidecar.**
+> **Instructions for connecting, instrumenting, and optimizing AI coding agents using GUPPI as a persistent sidecar process.**
 
 ---
 
-## 🎯 Overview
+## Overview
 
-GUPPI (*General-purpose Unifying Pluggable Intelligence*) is designed to operate as an **in-process & background sidecar daemon** for any LLM-powered coding agent. By providing structured MCP tools, virtual context resources (`guppi://`), and 100% local SQLite-backed memory, GUPPI solves three fundamental problems in agentic software engineering:
+GUPPI (*General-purpose Unifying Pluggable Intelligence*) operates as an in-process or background sidecar daemon for LLM-powered coding agents. By providing structured MCP tools, virtual context resources (`guppi://`), and local SQLite-backed memory, GUPPI addresses three main operational areas:
 
-1. **Context Window Bloat**: Replaces massive multi-hundred line file reads with token-compressed AST skeletons (~70-80% token savings) and Serena-style symbol lookups.
+1. **Context Window Bloat**: Replaces multi-hundred-line file reads with token-compressed AST skeletons (~70–80% token savings) and scope-aware symbol lookups.
 2. **Loss of Architectural Context & Rule Drift**: Automatically indexes project rules (`AGENTS.md`, `CLAUDE.md`, `.cursorrules`), episodic memory (Fact Triples), and past bug fixes across agent sessions.
-3. **High Risk of Breaking Changes**: Simulates signature mutations across call graphs and creates pre-flight shadow backup snapshots before atomic edits are committed.
+3. **Risk of Breaking Changes**: Simulates signature mutations across call graphs and creates pre-flight shadow backup snapshots before atomic edits are committed.
 
 ---
 
-## 🔌 1. Connecting Primary Agents to GUPPI via MCP
+## 1. Connecting Primary Agents to GUPPI via MCP
 
 GUPPI runs as a standard Model Context Protocol (MCP) server over `stdio` or HTTP.
 
@@ -49,21 +49,21 @@ Before executing file edits or reading large source files, utilize GUPPI MCP too
 
 ---
 
-## 🛠️ 2. Recommended Agentic Execution Recipes Matrix
+## 2. Recommended Agentic Execution Recipes Matrix
 
-GUPPI exposes a built-in decision matrix (`guppi://recipes/tool_selection`) mapping common developer goals to optimal tool execution chains:
+GUPPI exposes a built-in decision matrix (`guppi://recipes/tool_selection`) mapping common developer goals to tool execution chains:
 
 | Developer Task / Goal | Recommended Tool Execution Chain | Key Benefits |
 | :--- | :--- | :--- |
-| **Exploring Class Structure & Signatures** | `guppi_lst_find_symbols` $\rightarrow$ `guppi_lst_skeleton_slice` | Saves **70–80% LLM tokens** while providing exact AST signatures and docstrings. |
+| **Exploring Class Structure & Signatures** | `guppi_lst_find_symbols` $\rightarrow$ `guppi_lst_skeleton_slice` | Reduces LLM tokens by 70–80% while providing exact AST signatures and docstrings. |
 | **Tracing Downstream Usage & Callers** | `guppi_lst_find_references` $\rightarrow$ `guppi_call_graph_build` | Identifies every call site, instantiation, and import across the workspace. |
-| **Refactoring Public Functions / Signatures** | `guppi_lst_find_symbols` $\rightarrow$ `guppi_signature_mutate_simulate` $\rightarrow$ `guppi_lst_replace_symbol` | Evaluates breaking change risk across callers and creates a 1-click shadow backup snapshot before edit. |
+| **Refactoring Public Functions / Signatures** | `guppi_lst_find_symbols` $\rightarrow$ `guppi_signature_mutate_simulate` $\rightarrow$ `guppi_lst_replace_symbol` | Evaluates breaking change risk across callers and creates a shadow backup snapshot before editing. |
 | **Diagnosing Build / Test Failures** | `guppi_auto_fix_suggest` $\rightarrow$ `guppi_self_heal` $\rightarrow$ `guppi_rollback_file` | Parses tracebacks, matches past RAG memory solutions, and proposes surgical patch diffs. |
 | **Planning Complex Multi-Agent Features** | `guppi_brainstorm_start` $\rightarrow$ `guppi_task_plan_create` $\rightarrow$ `guppi_subagent_checkpoint` | Structured Q&A ideation, DAG step decomposition, and subagent context handoffs. |
 
 ---
 
-## 🗂️ 3. Browsing Virtual Context Filesystem (`guppi://`)
+## 3. Browsing Virtual Context Filesystem (`guppi://`)
 
 Agents can directly browse or read GUPPI MCP resources using the standard `read_resource` protocol:
 
@@ -77,7 +77,7 @@ Agents can directly browse or read GUPPI MCP resources using the standard `read_
 
 ---
 
-## 🚀 4. CLI Workflow Integration
+## 4. CLI Workflow Integration
 
 Developers and automation scripts can interact with GUPPI directly via the command line:
 
@@ -86,7 +86,7 @@ Developers and automation scripts can interact with GUPPI directly via the comma
 guppi init
 guppi onboard
 
-# 2. Scope-Aware Symbol Lookup (Serena LST Engine)
+# 2. Scope-Aware Symbol Lookup (LST Engine)
 guppi symbol LSTTraversalEngine
 
 # 3. LST Tree Query
@@ -110,8 +110,9 @@ guppi plan "Add WebSockets streaming tab to Web Dashboard"
 
 ---
 
-## 🛡️ 5. Safety, Secret Detection & Backup Rollback
+## 5. Safety, Secret Detection & Backup Rollback
 
 1. **Pre-flight Audit**: `guppi_guard_check` automatically scans edits for hardcoded API keys, secrets, or empty catch blocks.
 2. **Shadow Backup Snapshots**: Any atomic code replacement (`guppi_lst_replace_symbol`) automatically creates a timestamped snapshot in `.guppi/backups/`.
-3. **1-Click Emergency Rollback**: If a change fails build or test checks, call `guppi_rollback_file` to instantly restore the previous file state.
+3. **Emergency Rollback**: If a change fails build or test checks, call `guppi_rollback_file` to instantly restore the previous file state.
+
