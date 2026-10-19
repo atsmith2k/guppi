@@ -2,6 +2,11 @@
 
 All notable changes to GUPPI are documented in this file.
 
+## [Unreleased]
+
+### Security
+- `guppi start` now binds to `127.0.0.1` instead of every interface. The API and WebSocket have no authentication, so binding elsewhere takes `--host <address>` or `GUPPI_HOST`, and prints a warning.
+
 ## [2.0.0] — 2026-08-08
 
 ### New Feature Pillars

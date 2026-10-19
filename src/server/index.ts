@@ -1,5 +1,6 @@
 import express from 'express';
 import http from 'http';
+import type { AddressInfo } from 'net';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
@@ -13,12 +14,18 @@ const __dirname = path.dirname(__filename);
 
 export interface ServerOptions {
   port?: number;
+  /** Interface to bind. Defaults to GUPPI_HOST, then 127.0.0.1. The API has no authentication. */
+  host?: string;
   workspaceDir?: string;
   autoOnboard?: boolean;
 }
 
+const LOOPBACK_HOSTS = new Set(['127.0.0.1', '::1', 'localhost']);
+
 export function startGuppiServer(options: ServerOptions = {}) {
-  const port = options.port || 3737;
+  const port = Number.isInteger(options.port) ? (options.port as number) : 3737;
+  const host = options.host || process.env.GUPPI_HOST || '127.0.0.1';
+  const urlHost = host.includes(':') ? `[${host}]` : host;
   const workspaceDir = options.workspaceDir || process.cwd();
 
   const db = new GuppiDB(workspaceDir);
@@ -41,10 +48,15 @@ export function startGuppiServer(options: ServerOptions = {}) {
     });
   }
 
-  server.listen(port, () => {
-    console.log(`\n🚀 GUPPI Agentic Sidecar Server running at http://localhost:${port}`);
-    console.log(`📡 WebSocket endpoint: ws://localhost:${port}/ws`);
+  server.listen(port, host, () => {
+    const boundPort = (server.address() as AddressInfo).port;
+    console.log(`\n🚀 GUPPI Agentic Sidecar Server running at http://${urlHost}:${boundPort}`);
+    console.log(`📡 WebSocket endpoint: ws://${urlHost}:${boundPort}/ws`);
     console.log(`🗄️  Database: ${db.dbPath}`);
+    if (!LOOPBACK_HOSTS.has(host)) {
+      console.warn(`⚠️  Listening on ${host}, not loopback. The API and WebSocket have no authentication:`);
+      console.warn(`   anyone who can reach this address can read and change this workspace's GUPPI data.`);
+    }
 
     if (options.autoOnboard) {
       console.log(`🔍 Running initial auto-onboarding scan...`);
