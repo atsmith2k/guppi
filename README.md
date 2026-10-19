@@ -57,7 +57,7 @@ npm link
 # 2. Initialize GUPPI in your project (creates .guppi/guppi.db and .guppi/mcp.json)
 guppi init
 
-# 3. Start the background daemon and Web Control Deck
+# 3. Start the background daemon and Web Control Deck (binds 127.0.0.1:3737)
 guppi start
 
 # 4. Scope-aware symbol search (LST Engine)
@@ -229,6 +229,7 @@ GUPPI exposes standard MCP Resources that agents can browse or read:
 1. **Local and Offline Execution**: All databases (`guppi.db`), RAG indexes, and backups remain strictly on the local filesystem. No codebase data or context is transmitted to external endpoints.
 2. **Non-Destructive Shadow Backups**: GUPPI creates timestamped backup snapshots in `.guppi/backups/` before executing atomic code modifications.
 3. **Pre-flight Secret Guardrails**: Pre-flight audits scan for hardcoded API keys, credentials, and empty exception catch blocks prior to committing changes.
+4. **Loopback-only Server**: `guppi start` binds the HTTP API, WebSocket and dashboard to `127.0.0.1`. They have no authentication, so another address must be chosen explicitly with `guppi start --host <address>` or `GUPPI_HOST`, and GUPPI prints a warning when it is not loopback.
 
 ---
 

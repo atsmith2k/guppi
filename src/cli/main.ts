@@ -77,9 +77,10 @@ export function runCLI() {
     .command('start')
     .description('Start the GUPPI background server daemon and Web Dashboard UI')
     .option('-p, --port <number>', 'Server port', '3737')
+    .option('--host <address>', 'Interface to bind (default: GUPPI_HOST or 127.0.0.1). The API has no authentication.')
     .action((options) => {
       const port = parseInt(options.port);
-      startGuppiServer({ port, workspaceDir: process.cwd(), autoOnboard: true });
+      startGuppiServer({ port, host: options.host, workspaceDir: process.cwd(), autoOnboard: true });
     });
 
   // guppi mcp
