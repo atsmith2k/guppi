@@ -21,6 +21,12 @@ async function boundAddress(options: Parameters<typeof startGuppiServer>[0]) {
 }
 
 test('GUPPI server binds to loopback unless told otherwise', async (t) => {
+  // The server logs its startup banner to stdout. Plain stdout text mixed into the
+  // test runner's serialized child-process stream can make Node 22's parser throw
+  // "Unable to deserialize cloned data", so keep this file quiet.
+  t.mock.method(console, 'log', () => {});
+  t.mock.method(console, 'warn', () => {});
+
   const savedHost = process.env.GUPPI_HOST;
   delete process.env.GUPPI_HOST;
   t.after(() => {
